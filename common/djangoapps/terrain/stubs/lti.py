@@ -1,5 +1,5 @@
 """
-LTI Server
+Stub implementation of LTI Provider.
 
 What is supported:
 ------------------
@@ -8,7 +8,7 @@ What is supported:
 not possible to have this LTI multiple times on a single page in LMS.
 
 """
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+
 from uuid import uuid4
 import textwrap
 import urlparse
@@ -20,34 +20,24 @@ import mock
 import sys
 import requests
 import textwrap
+from django.conf import settings
+from .http import StubHttpRequestHandler, StubHttpService
 
-from logging import getLogger
-logger = getLogger(__name__)
-
-
-class MockLTIRequestHandler(BaseHTTPRequestHandler):
-    '''
-    A handler for LTI POST requests.
-    '''
-
-    protocol = "HTTP/1.0"
-    callback_url = None
-
-    def log_message(self, format, *args):
-        """Log an arbitrary message."""
-        # Code copied from BaseHTTPServer.py. Changed to write to sys.stdout
-        # so that messages won't pollute test output.
-        sys.stdout.write("%s - - [%s] %s\n" %
-                         (self.client_address[0],
-                          self.log_date_time_string(),
-                          format % args))
+class StubLtiHandler(StubHttpRequestHandler):
+    """
+    A handler for LTI POST and GET requests.
+    """
+    DEFAULT_CLIENT_KEY = 'test_client_key'
+    DEFAULT_CLIENT_SECRET = 'test_client_secret'
+    DEFAULT_LTI_BASE = 'http://127.0.0.1:{}/'.format(settings.LTI_PORT)
+    DEFAULT_LTI_ENDPOINT = 'correct_lti_endpoint'
 
     def do_GET(self):
-        '''
+        """
         Handle a GET request from the client and sends response back.
 
         Used for checking LTI Provider started correctly.
-        '''
+        """
         self.send_response(200, 'OK')
         self.send_header('Content-type', 'html')
         self.end_headers()
@@ -56,9 +46,9 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_str)
 
     def do_POST(self):
-        '''
+        """
         Handle a POST request from the client and sends response back.
-        '''
+        """
         if 'grade' in self.path and self._send_graded_result().status_code == 200:
             status_message = 'LTI consumer (edX) responded with XML content:<br>' + self.server.grade_data['TC answer']
             self.server.grade_data = None
@@ -67,7 +57,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         elif self._is_correct_lti_request():
             self.post_dict = self._post_dict()
             params = {k: v for k, v in self.post_dict.items() if k != 'oauth_signature'}
-            if self.server.check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
+            if self.check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
                 status_message = "This is LTI tool. Success."
                 # set data for grades what need to be stored as server data
                 if 'lis_outcome_service_url' in self.post_dict:
@@ -84,7 +74,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
 
     def _send_head(self, status_code):
         '''
-        Send the response code and MIME headers
+        Send the response code and MIME headers.
         '''
         self.send_response(status_code)
         self.send_header('Content-type', 'text/html')
@@ -152,6 +142,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                 </imsx_POXEnvelopeRequest>
         """)
         data = payload.format(**values)
+
         if getattr(self.server, 'use_real_callback_url', None):
             # Use exact URL that was sent from TC when using this Stub LTI server
             # as TP in real standalone environment.
@@ -166,7 +157,7 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
 
         # We can't mock requests in unit tests, because we use them, but we need
         # them to be mocked only for this one case.
-        if getattr(self.server, 'run_inside_unittest_flag', None):
+        if self.server.config('run_inside_unittest_flag', None):
             response = mock.Mock(status_code=200, url=url, data=data, headers=headers)
             return response
         # Send request ignoring verification of SSL certificate
@@ -180,9 +171,9 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         return response
 
     def _send_response(self, message, status_code):
-        '''
-        Send message back to the client
-        '''
+        """
+        Send message back to the client.
+        """
         self._send_head(status_code)
         if getattr(self.server, 'grade_data', False):  # lti can be graded
             url = "//%s:%s" % self.server.server_address
@@ -221,22 +212,24 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
                 </html>
             """).format(message)
 
-        logger.debug("LTI: sent response {}".format(response_str))
         self.wfile.write(response_str)
 
     def _is_correct_lti_request(self):
         '''
-        If url to LTI tool is correct.
+        If url to LTI Provider is correct.
         '''
-        return self.server.oauth_settings['lti_endpoint'] in self.path
+        lti_endpoint = self.server.config('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
+        return lti_endpoint in self.path
 
     def oauth_sign(self, url, body):
         """
         Signs request and returns signed body and headers.
         """
+        client_key = self.server.config('client_key', self.DEFAULT_CLIENT_KEY)
+        client_secret = self.server.config('client_secret', self.DEFAULT_CLIENT_SECRET)
         client = oauthlib.oauth1.Client(
-            client_key=unicode(self.server.oauth_settings['client_key']),
-            client_secret=unicode(self.server.oauth_settings['client_secret'])
+            client_key=unicode(client_key),
+            client_secret=unicode(client_secret)
         )
         headers = {
             # This is needed for body encoding:
@@ -256,33 +249,8 @@ class MockLTIRequestHandler(BaseHTTPRequestHandler):
         headers = headers['Authorization'] + ', oauth_body_hash="{}"'.format(oauth_body_hash)
         return headers
 
-
-class MockLTIServer(HTTPServer):
-    '''
-    A mock LTI provider server that responds
-    to POST requests to localhost.
-    '''
-
-    def __init__(self, address):
-        '''
-        Initialize the mock XQueue server instance.
-
-        *address* is the (host, host's port to listen to) tuple.
-        '''
-        handler = MockLTIRequestHandler
-        HTTPServer.__init__(self, address, handler)
-
-    def shutdown(self):
-        '''
-        Stop the server and free up the port
-        '''
-        # First call superclass shutdown()
-        HTTPServer.shutdown(self)
-        # We also need to manually close the socket
-        self.socket.close()
-
     def check_oauth_signature(self, params, client_signature):
-        '''
+        """
         Checks oauth signature from client.
 
         `params` are params from post request except signature,
@@ -296,15 +264,25 @@ class MockLTIServer(HTTPServer):
 
         Returns `True` if signatures are correct, otherwise `False`.
 
-        '''
-        client_secret = unicode(self.oauth_settings['client_secret'])
-        url = self.oauth_settings['lti_base'] + self.oauth_settings['lti_endpoint']
+        """
+        client_secret = unicode(self.server.config('client_secret', self.DEFAULT_CLIENT_SECRET))
+        lti_base = self.server.config('lti_base', self.DEFAULT_LTI_BASE)
+        lti_endpoint = self.server.config('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
+        url = lti_base + lti_endpoint
 
         request = mock.Mock()
-
         request.params = [(unicode(k), unicode(v)) for k, v in params.items()]
         request.uri = unicode(url)
         request.http_method = u'POST'
         request.signature = unicode(client_signature)
         return signature.verify_hmac_sha1(request, client_secret)
+
+
+class StubLtiService(StubHttpService):
+    """
+    A stub LTI provider server that responds
+    to POST and GET requests to localhost.
+    """
+
+    HANDLER_CLASS = StubLtiHandler
 
