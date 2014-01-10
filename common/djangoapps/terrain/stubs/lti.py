@@ -21,7 +21,7 @@ import sys
 import requests
 import textwrap
 from django.conf import settings
-from .http import StubHttpRequestHandler, StubHttpService
+from http import StubHttpRequestHandler, StubHttpService
 
 class StubLtiHandler(StubHttpRequestHandler):
     """
@@ -38,12 +38,7 @@ class StubLtiHandler(StubHttpRequestHandler):
 
         Used for checking LTI Provider started correctly.
         """
-        self.send_response(200, 'OK')
-        self.send_header('Content-type', 'html')
-        self.end_headers()
-        response_str = """<html><head><title>TEST TITLE</title></head>
-            <body>This is LTI Provider.</body></html>"""
-        self.wfile.write(response_str)
+        self.send_response(200, 'This is LTI Provider.', {'Content-type': 'text/plain'})
 
     def do_POST(self):
         """
@@ -286,3 +281,11 @@ class StubLtiService(StubHttpService):
 
     HANDLER_CLASS = StubLtiHandler
 
+if __name__ == "__main__":
+    service = StubLtiService(8034)
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        service.shutdown()
+        exit(0)
