@@ -20,7 +20,6 @@ import mock
 import sys
 import requests
 import textwrap
-from django.conf import settings
 from http import StubHttpRequestHandler, StubHttpService
 
 class StubLtiHandler(StubHttpRequestHandler):
@@ -29,7 +28,7 @@ class StubLtiHandler(StubHttpRequestHandler):
     """
     DEFAULT_CLIENT_KEY = 'test_client_key'
     DEFAULT_CLIENT_SECRET = 'test_client_secret'
-    DEFAULT_LTI_BASE = 'http://127.0.0.1:{}/'.format(settings.LTI_PORT)
+    DEFAULT_LTI_BASE = 'http://127.0.0.1:8034/'
     DEFAULT_LTI_ENDPOINT = 'correct_lti_endpoint'
 
     def do_GET(self):
@@ -44,62 +43,33 @@ class StubLtiHandler(StubHttpRequestHandler):
         """
         Handle a POST request from the client and sends response back.
         """
+        headers = {'Content-type': 'text/html'}
         if 'grade' in self.path and self._send_graded_result().status_code == 200:
             status_message = 'LTI consumer (edX) responded with XML content:<br>' + self.server.grade_data['TC answer']
-            self.server.grade_data = None
-            self._send_response(status_message, 200)
+            content = self.create_content(status_message)
+            self.send_response(200, content)
         # Respond to request with correct lti endpoint:
         elif self._is_correct_lti_request():
-            self.post_dict = self._post_dict()
             params = {k: v for k, v in self.post_dict.items() if k != 'oauth_signature'}
             if self.check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
                 status_message = "This is LTI tool. Success."
                 # set data for grades what need to be stored as server data
                 if 'lis_outcome_service_url' in self.post_dict:
+                    referer = urlparse.urlparse(self.headers.getheader('referer'))
+                    self.server.referer_host = "{}://{}".format(referer.scheme, referer.netloc)
                     self.server.grade_data = {
                         'callback_url': self.post_dict.get('lis_outcome_service_url'),
                         'sourcedId': self.post_dict.get('lis_result_sourcedid')
                     }
+                submit_url = '//%s:%s' % self.server.server_address
+                content = self.create_content(status_message, submit_url)
+                self.send_response(200, content)
             else:
-                status_message = "Wrong LTI signature"
-            self._send_response(status_message, 200)
+                content = self.create_content("Wrong LTI signature")
+                self.send_response(200, content)
         else:
-            status_message = "Invalid request URL"
-            self._send_response(status_message, 500)
-
-    def _send_head(self, status_code):
-        '''
-        Send the response code and MIME headers.
-        '''
-        self.send_response(status_code)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-
-    def _post_dict(self):
-        '''
-        Retrieve the POST parameters from the client as a dictionary
-        '''
-        try:
-            length = int(self.headers.getheader('content-length'))
-            post_dict = urlparse.parse_qs(self.rfile.read(length), keep_blank_values=True)
-            # The POST dict will contain a list of values for each key.
-            # None of our parameters are lists, however, so we map [val] --> val.
-            # If the list contains multiple entries, we pick the first one
-            post_dict = {key: val[0] for key, val in post_dict.items()}
-        except:
-            # We return an empty dict here, on the assumption
-            # that when we later check that the request has
-            # the correct fields, it won't find them,
-            # and will therefore send an error response
-            return {}
-        try:
-            cookie = self.headers.getheader('cookie')
-            self.server.cookie = {k.strip(): v[0] for k, v in urlparse.parse_qs(cookie).items()}
-        except:
-            self.server.cookie = {}
-        referer = urlparse.urlparse(self.headers.getheader('referer'))
-        self.server.referer_host = "{}://{}".format(referer.scheme, referer.netloc)
-        return post_dict
+            content = self.create_content("Invalid request URL")
+            self.send_response(500, content)
 
     def _send_graded_result(self):
         """
@@ -165,33 +135,19 @@ class StubLtiHandler(StubHttpRequestHandler):
         self.server.grade_data['TC answer'] = response.content
         return response
 
-    def _send_response(self, message, status_code):
+    def create_content(self, response_text, submit_url=None):
         """
-        Send message back to the client.
+        Return content (str) either for launch, send grade or get result from TC.
         """
-        self._send_head(status_code)
-        if getattr(self.server, 'grade_data', False):  # lti can be graded
-            url = "//%s:%s" % self.server.server_address
-            response_str = textwrap.dedent("""
-                <html>
-                    <head>
-                        <title>TEST TITLE</title>
-                    </head>
-                    <body>
-                        <div>
-                            <h2>Graded IFrame loaded</h2>
-                            <h3>Server response is:</h3>
-                            <h3 class="result">{}</h3>
-                            <h5>Role: {role}</h5>
-                        </div>
-                        <form action="{url}/grade" method="post">
-                            <input type="submit" name="submit-button" value="Submit">
-                        </form>
-                    </body>
-                </html>
-            """).format(message, role=self.post_dict['roles'], url=url)
-        else: # lti can't be graded
-            response_str = textwrap.dedent("""
+        submit_form = ''
+        if submit_url:
+            submit_form = textwrap.dedent("""
+                <form action="{}/grade" method="post">
+                    <input type="submit" name="submit-button" value="Submit">
+                </form>
+            """).format(submit_url)
+
+        response_str = textwrap.dedent("""
                 <html>
                     <head>
                         <title>TEST TITLE</title>
@@ -203,11 +159,12 @@ class StubLtiHandler(StubHttpRequestHandler):
                             <h3 class="result">{}</h3>
 
                         </div>
+                        {}
                     </body>
                 </html>
-            """).format(message)
+            """).format(response_text, submit_form)
 
-        self.wfile.write(response_str)
+        return response_str
 
     def _is_correct_lti_request(self):
         '''
@@ -283,6 +240,8 @@ class StubLtiService(StubHttpService):
 
 if __name__ == "__main__":
     service = StubLtiService(8034)
+    service.set_config('test_mode', True)
+
     try:
         while True:
             pass
