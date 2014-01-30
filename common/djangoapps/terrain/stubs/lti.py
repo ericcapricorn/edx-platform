@@ -12,6 +12,7 @@ not possible to have this LTI multiple times on a single page in LMS.
 from uuid import uuid4
 import textwrap
 import urlparse
+import urllib
 from oauthlib.oauth1.rfc5849 import signature
 import oauthlib.oauth1
 import hashlib
@@ -122,7 +123,7 @@ class StubLtiHandler(StubHttpRequestHandler):
 
         # We can't mock requests in unit tests, because we use them, but we need
         # them to be mocked only for this one case.
-        if self.server.config('run_inside_unittest_flag', None):
+        if self.server.config.get('run_inside_unittest_flag', None):
             response = mock.Mock(status_code=200, url=url, data=data, headers=headers)
             return response
         # Send request ignoring verification of SSL certificate
@@ -164,21 +165,21 @@ class StubLtiHandler(StubHttpRequestHandler):
                 </html>
             """).format(response_text, submit_form)
 
-        return response_str
+        return urllib.unquote(response_str)
 
     def _is_correct_lti_request(self):
         '''
         If url to LTI Provider is correct.
         '''
-        lti_endpoint = self.server.config('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
+        lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         return lti_endpoint in self.path
 
     def oauth_sign(self, url, body):
         """
         Signs request and returns signed body and headers.
         """
-        client_key = self.server.config('client_key', self.DEFAULT_CLIENT_KEY)
-        client_secret = self.server.config('client_secret', self.DEFAULT_CLIENT_SECRET)
+        client_key = self.server.config.get('client_key', self.DEFAULT_CLIENT_KEY)
+        client_secret = self.server.config.get('client_secret', self.DEFAULT_CLIENT_SECRET)
         client = oauthlib.oauth1.Client(
             client_key=unicode(client_key),
             client_secret=unicode(client_secret)
@@ -217,9 +218,9 @@ class StubLtiHandler(StubHttpRequestHandler):
         Returns `True` if signatures are correct, otherwise `False`.
 
         """
-        client_secret = unicode(self.server.config('client_secret', self.DEFAULT_CLIENT_SECRET))
-        lti_base = self.server.config('lti_base', self.DEFAULT_LTI_BASE)
-        lti_endpoint = self.server.config('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
+        client_secret = unicode(self.server.config.get('client_secret', self.DEFAULT_CLIENT_SECRET))
+        lti_base = self.server.config.get('lti_base', self.DEFAULT_LTI_BASE)
+        lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         url = lti_base + lti_endpoint
 
         request = mock.Mock()
@@ -227,6 +228,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         request.uri = unicode(url)
         request.http_method = u'POST'
         request.signature = unicode(client_signature)
+
         return signature.verify_hmac_sha1(request, client_secret)
 
 
@@ -240,7 +242,6 @@ class StubLtiService(StubHttpService):
 
 if __name__ == "__main__":
     service = StubLtiService(8034)
-    service.set_config('test_mode', True)
 
     try:
         while True:

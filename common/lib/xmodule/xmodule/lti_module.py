@@ -325,7 +325,7 @@ class LTIModule(LTIFields, XModule):
         the link being launched.
         lti_id should be context_id by meaning.
         """
-        return u':'.join(urllib.quote(i) for i in (self.lti_id, self.get_resource_link_id(), self.get_user_id()))
+        return u':'.join(i for i in (urllib.quote(self.lti_id), self.get_resource_link_id(), self.get_user_id()))
 
     def get_course(self):
         """
