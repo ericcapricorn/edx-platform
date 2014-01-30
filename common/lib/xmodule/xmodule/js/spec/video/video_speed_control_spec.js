@@ -73,71 +73,90 @@
             });
 
             describe('when running on non-touch based device', function () {
+                var keypress = $.Event('keypress'),
+                    speedControl = $('div.speeds'),
+                    speedEntries = $('div.speeds>a'),
+                    firstSpeedEntry = speedEntries.first(),
+                    secondSpeedEntry = $(speedEntries.eq(1)),
+                    previousLastSpeedEntry = $(speedEntries.eq(speedEntries.length-1)),
+                    lastSpeedEntry = speedEntries.last();
+
                 beforeEach(function () {
                     state = jasmine.initializePlayer();
+                    spyOnEvent(firstSpeedEntry, 'focus');
+                    spyOnEvent(secondSpeedEntry, 'focus');
+                    spyOnEvent(previousLastSpeedEntry, 'focus');
+                    spyOnEvent(lastSpeedEntry, 'focus');
                 });
 
                 it('open the speed toggle on hover', function () {
-                    $('.speeds').mouseenter();
-                    expect($('.speeds')).toHaveClass('open');
+                    speedControl.mouseenter();
+                    expect(speedControl).toHaveClass('open');
 
-                    $('.speeds').mouseleave();
-                    expect($('.speeds')).not.toHaveClass('open');
+                    speedControl.mouseleave();
+                    expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('close the speed toggle on mouse out', function () {
-                    $('.speeds').mouseenter().mouseleave();
+                    speedControl.mouseenter().mouseleave();
 
-                    expect($('.speeds')).not.toHaveClass('open');
+                    expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('close the speed toggle on click', function () {
-                    $('.speeds').mouseenter().click();
+                    speedControl.mouseenter().click();
 
-                    expect($('.speeds')).not.toHaveClass('open');
+                    expect(speedControl).not.toHaveClass('open');
                 });
 
-                // Tabbing depends on the following order:
-                // 1. Play anchor
-                // 2. Speed anchor
-                // 3. A number of speed entry anchors
-                // 4. Volume anchor
-                // If another focusable element is inserted or if the order is
-                // changed, things will malfunction as a flag,
-                // state.previousFocus, is set in the 1,3,4 elements and is
-                // used to determine the behavior of foucus() and blur() for
-                // the speed anchor.
-                it(
-                    'checks for a certain order in focusable elements in ' +
-                    'video controls',
-                    function ()
-                {
-                    var foundFirst = false,
-                        playIndex, speedIndex, firstSpeedEntry, lastSpeedEntry,
-                        volumeIndex;
+                it('open/close the speed toggle on ENTER keydown', function () {
+                    keypress.which = $.ui.keyCode.ENTER;
+                    speedControl.trigger(keypress);
+                    expect(speedControl).toHaveClass('open');
+                    speedControl.trigger(keypress);
+                    expect(speedControl).not.toHaveClass('open');
+                });
 
-                    $('.video-controls').find('a, :focusable').each(
-                        function (index)
-                    {
-                        if ($(this).hasClass('video_control')) {
-                            playIndex = index;
-                        } else if ($(this).parent().hasClass('speeds')) {
-                            speedIndex = index;
-                        } else if ($(this).hasClass('speed_link')) {
-                            if (!foundFirst) {
-                                firstSpeedEntry = index;
-                                foundFirst = true;
-                            }
+                it('open/close the speed toggle on SPACE keydown', function () {
+                    keypress.which = $.ui.keyCode.SPACE;
+                    speedControl.trigger(keypress);
+                    expect(speedControl).toHaveClass('open');
+                    speedControl.trigger(keypress);
+                    expect(speedControl).not.toHaveClass('open');
+                });
 
-                            lastSpeedEntry = index;
-                        } else if ($(this).parent().hasClass('volume')) {
-                            volumeIndex = index;
-                        }
-                    });
+                it('open the speed toggle on UP keydown', function () {
+                    keypress.which = $.ui.keyCode.UP;
+                    speedControl.trigger(keypress);
+                    expect(speedControl).toHaveClass('open');
+                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
+                });
 
-                    expect(playIndex+1).toEqual(speedIndex);
-                    expect(speedIndex+1).toEqual(firstSpeedEntry);
-                    expect(lastSpeedEntry+1).toEqual(volumeIndex);
+                it('close the speed toggle on ESC keydown', function () {
+                    keypress.which = $.ui.keyCode.ESC;
+                    speedControl.trigger(keypress);
+                    expect(speedControl).not.toHaveClass('open');
+                });
+
+                it('UP and DOWN keydown function as expected', function () {
+                    // Iterate through list in both directions and check if
+                    // things wrap up correctly.
+                    keypress.which = $.ui.keyCode.UP;
+                    speedControl.trigger(keypress);
+                    lastSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(previousLastSpeedEntry);
+                    keypress.which = $.ui.keyCode.DOWN;
+                    previousLastSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
+                    lastSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(firstSpeedEntry);
+                    firstSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(secondSpeedEntry);
+                    keypress.which = $.ui.keyCode.UP;
+                    secondSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(firstSpeedEntry);
+                    firstSpeedEntry.trigger(keypress);
+                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
                 });
             });
         });
