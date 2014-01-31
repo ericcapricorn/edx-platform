@@ -100,9 +100,6 @@ def set_incorrect_lti_passport(_step):
 
 @step('the course has an LTI component with (.*) fields(?:\:)?$') #, new_page is(.*), is_graded is(.*)
 def add_correct_lti_to_course(_step, fields):
-    # Set this flag to correctly handle callback URL in LTI Stub.
-    world.lti.set_config('test_mode', True)
-
     category = 'lti'
     metadata = {
         'lti_id': 'correct_lti_id',

@@ -21,9 +21,7 @@ class StubLtiServiceTest(unittest.TestCase):
     def setUp(self):
         self.server = StubLtiService()
         self.uri = 'http://127.0.0.1:{}/'.format(self.server.port)
-         # Flag for creating right callback_url
-        self.server.set_config('test_mode', True)
-        self.server.set_config('run_inside_unittest_flag', True)
+        self.server.config['run_inside_unittest_flag'] = True
         self.addCleanup(self.server.shutdown)
 
     def test_wrong_header(self):

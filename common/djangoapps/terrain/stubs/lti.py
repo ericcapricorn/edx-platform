@@ -29,7 +29,6 @@ class StubLtiHandler(StubHttpRequestHandler):
     """
     DEFAULT_CLIENT_KEY = 'test_client_key'
     DEFAULT_CLIENT_SECRET = 'test_client_secret'
-    DEFAULT_LTI_BASE = 'http://127.0.0.1:8034/'
     DEFAULT_LTI_ENDPOINT = 'correct_lti_endpoint'
 
     def do_GET(self):
@@ -219,7 +218,7 @@ class StubLtiHandler(StubHttpRequestHandler):
 
         """
         client_secret = unicode(self.server.config.get('client_secret', self.DEFAULT_CLIENT_SECRET))
-        lti_base = self.server.config.get('lti_base', self.DEFAULT_LTI_BASE)
+        lti_base = "http://{}:{}".format(*self.server.server_address)
         lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         url = lti_base + lti_endpoint
 
@@ -228,7 +227,6 @@ class StubLtiHandler(StubHttpRequestHandler):
         request.uri = unicode(url)
         request.http_method = u'POST'
         request.signature = unicode(client_signature)
-
         return signature.verify_hmac_sha1(request, client_secret)
 
 
@@ -239,13 +237,3 @@ class StubLtiService(StubHttpService):
     """
 
     HANDLER_CLASS = StubLtiHandler
-
-if __name__ == "__main__":
-    service = StubLtiService(8034)
-
-    try:
-        while True:
-            pass
-    except KeyboardInterrupt:
-        service.shutdown()
-        exit(0)
