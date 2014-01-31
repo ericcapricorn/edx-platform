@@ -6,13 +6,15 @@ import time
 import logging
 from .xqueue import StubXQueueService
 from .youtube import StubYouTubeService
+from .lti import StubLtiService
 
 
 USAGE = "USAGE: python -m stubs.start SERVICE_NAME PORT_NUM"
 
 SERVICES = {
     'xqueue': StubXQueueService,
-    'youtube': StubYouTubeService
+    'youtube': StubYouTubeService,
+    'lti': StubLtiService,
 }
 
 # Log to stdout, including debug messages
