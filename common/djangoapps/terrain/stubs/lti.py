@@ -30,6 +30,7 @@ class StubLtiHandler(StubHttpRequestHandler):
     DEFAULT_CLIENT_KEY = 'test_client_key'
     DEFAULT_CLIENT_SECRET = 'test_client_secret'
     DEFAULT_LTI_ENDPOINT = 'correct_lti_endpoint'
+    DEFAULT_LTI_ADDRESS = 'http://127.0.0.1:{port}/'
 
     def do_GET(self):
         """
@@ -61,7 +62,7 @@ class StubLtiHandler(StubHttpRequestHandler):
                         'callback_url': self.post_dict.get('lis_outcome_service_url'),
                         'sourcedId': self.post_dict.get('lis_result_sourcedid')
                     }
-                submit_url = '//%s:%s' % self.server.server_address
+                submit_url = '//{}:{}'.format(*self.server.server_address)
                 content = self.create_content(status_message, submit_url)
                 self.send_response(200, content)
             else:
@@ -107,16 +108,7 @@ class StubLtiHandler(StubHttpRequestHandler):
                 </imsx_POXEnvelopeRequest>
         """)
         data = payload.format(**values)
-
-        if getattr(self.server, 'use_real_callback_url', None):
-            # Use exact URL that was sent from TC when using this Stub LTI server
-            # as TP in real standalone environment.
-            url = self.server.grade_data['callback_url']
-        else:
-            # Use relative URL when using TP locally for manual testing or jenkins.
-            relative_url = urlparse.urlparse(self.server.grade_data['callback_url']).path
-            url = self.server.referer_host + relative_url
-
+        url = self.server.grade_data['callback_url']
         headers = {'Content-Type': 'application/xml', 'X-Requested-With': 'XMLHttpRequest'}
         headers['Authorization'] = self.oauth_sign(url, data)
 
@@ -125,6 +117,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         if self.server.config.get('run_inside_unittest_flag', None):
             response = mock.Mock(status_code=200, url=url, data=data, headers=headers)
             return response
+
         # Send request ignoring verification of SSL certificate
         response = requests.post(
             url,
@@ -218,7 +211,9 @@ class StubLtiHandler(StubHttpRequestHandler):
 
         """
         client_secret = unicode(self.server.config.get('client_secret', self.DEFAULT_CLIENT_SECRET))
-        lti_base = "http://{}:{}".format(*self.server.server_address)
+
+        port = self.server.server_address[1]
+        lti_base = self.DEFAULT_LTI_ADDRESS.format(port=port)
         lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         url = lti_base + lti_endpoint
 
