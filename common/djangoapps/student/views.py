@@ -49,6 +49,7 @@ from student.forms import PasswordResetFormNoActive
 
 from verify_student.models import SoftwareSecurePhotoVerification, MidcourseReverificationWindow
 from certificates.models import CertificateStatuses, certificate_status_for_student
+from dark_lang.models import DarkLangConfig
 
 from xmodule.course_module import CourseDescriptor
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -473,7 +474,8 @@ def dashboard(request):
     # If there are *any* denied reverifications that have not been toggled off,
     # we'll display the banner
     denied_banner = any(item.display for item in reverifications["denied"])
-
+    language_options = DarkLangConfig.current().released_languages_list
+    from nose.tools import set_trace; set_trace()
     context = {'course_enrollment_pairs': course_enrollment_pairs,
                'course_optouts': course_optouts,
                'message': message,
@@ -490,6 +492,7 @@ def dashboard(request):
                'show_refund_option_for': show_refund_option_for,
                'denied_banner': denied_banner,
                'billing_email': settings.PAYMENT_SUPPORT_EMAIL,
+               'language_options': language_options,
                }
 
     return render_to_response('dashboard.html', context)
