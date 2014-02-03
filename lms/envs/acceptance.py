@@ -13,6 +13,7 @@ from .sauce import *
 # You need to start the server in debug mode,
 # otherwise the browser will not render the pages correctly
 DEBUG = True
+SITE_NAME = 'localhost:8003'
 
 # Output Django logs to a file
 import logging
