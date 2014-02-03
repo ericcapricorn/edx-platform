@@ -10,8 +10,9 @@ from edxmako.shortcuts import render_to_response, render_to_string
 from xmodule_modifiers import replace_static_urls, wrap_xblock
 from xmodule.error_module import ErrorDescriptor
 from xmodule.exceptions import NotFoundError, ProcessingError
-from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.django import modulestore, loc_mapper
 from xmodule.x_module import ModuleSystem
+from xmodule.modulestore.locator import Locator
 from xblock.runtime import KvsFieldData
 from xblock.django.request import webob_to_django_response, django_to_webob_request
 from xblock.exceptions import NoSuchHandlerError
@@ -56,7 +57,8 @@ def preview_handler(request, usage_id, handler, suffix=''):
     handler: The handler to execute
     suffix: The remainder of the url to be passed to the handler
     """
-
+    # Note: usage_id is currently the string form of a Location, but in the
+    # future it will be the string representation of a Locator.
     location = unquote_slashes(usage_id)
 
     descriptor = modulestore().get_item(location)
@@ -103,7 +105,11 @@ def _preview_module_system(request, descriptor):
     descriptor: An XModuleDescriptor
     """
 
-    course_id = get_course_for_item(descriptor.location).location.course_id
+    if isinstance(descriptor.location, Locator):
+        course_location = loc_mapper().translate_locator_to_location(descriptor.location, get_course=True)
+        course_id = course_location.course_id
+    else:
+        course_id = get_course_for_item(descriptor.location).location.course_id
 
     return PreviewModuleSystem(
         static_url=settings.STATIC_URL,
@@ -123,17 +129,15 @@ def _preview_module_system(request, descriptor):
         # Set up functions to modify the fragment produced by student_view
         wrappers=(
             # This wrapper wraps the module in the template specified above
-            partial(wrap_xblock, handler_prefix, display_name_only=descriptor.location.category == 'static_tab'),
+            partial(wrap_xblock, handler_prefix, display_name_only=descriptor.category == 'static_tab'),
 
             # This wrapper replaces urls in the output that start with /static
             # with the correct course-specific url for the static content
-            partial(
-                replace_static_urls,
-                getattr(descriptor, 'data_dir', descriptor.location.course),
-                course_id=descriptor.location.org + '/' + descriptor.location.course + '/BOGUS_RUN_REPLACE_WHEN_AVAILABLE',
-            ),
+            partial(replace_static_urls, None, course_id=course_id),
         ),
         error_descriptor_class=ErrorDescriptor,
+        # get_user_role accepts a location or a CourseLocator.
+        # If descriptor.location is a CourseLocator, course_id is unused.
         get_user_role=lambda: get_user_role(request.user, descriptor.location, course_id),
     )
 
