@@ -73,90 +73,97 @@
             });
 
             describe('when running on non-touch based device', function () {
-                var keypress = $.Event('keypress'),
-                    speedControl = $('div.speeds'),
-                    speedEntries = $('div.speeds>a'),
-                    firstSpeedEntry = speedEntries.first(),
-                    secondSpeedEntry = $(speedEntries.eq(1)),
-                    previousLastSpeedEntry = $(speedEntries.eq(speedEntries.length-1)),
-                    lastSpeedEntry = speedEntries.last();
+                var speedControl, speedEntries,
+                    KEY = $.ui.keyCode;
+
+                keyPressEvent = function(key) {
+                    return $.Event('keydown', {keyCode: key});
+                };
+
+                // Get previous element in array or cyles back to the last if it
+                // is the first.
+                previousSpeed = function(index) {
+                    return index === 0 ?
+                                     speedEntries.eq(speedEntries.length - 1) :
+                                     speedEntries.eq(index - 1);
+                }
+
+                // Get next element in array or cyles back to the first if it is
+                // the last.
+                nextSpeed = function(index) {
+                    return index === speedEntries.length - 1 ?
+                                     speedEntries.eq(0) :
+                                     speedEntries.eq(index + 1);
+                }
 
                 beforeEach(function () {
                     state = jasmine.initializePlayer();
-                    spyOnEvent(firstSpeedEntry, 'focus');
-                    spyOnEvent(secondSpeedEntry, 'focus');
-                    spyOnEvent(previousLastSpeedEntry, 'focus');
-                    spyOnEvent(lastSpeedEntry, 'focus');
+                    speedControl = $('div.speeds');
+                    speedEntries = $('div.speeds>a');
+                    spyOn($.fn, 'focus');
                 });
 
                 it('open the speed toggle on hover', function () {
                     speedControl.mouseenter();
                     expect(speedControl).toHaveClass('open');
-
                     speedControl.mouseleave();
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('close the speed toggle on mouse out', function () {
                     speedControl.mouseenter().mouseleave();
-
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('close the speed toggle on click', function () {
                     speedControl.mouseenter().click();
-
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('open/close the speed toggle on ENTER keydown', function () {
-                    keypress.which = $.ui.keyCode.ENTER;
-                    speedControl.trigger(keypress);
+                    speedControl.trigger(keyPressEvent(KEY.ENTER));
                     expect(speedControl).toHaveClass('open');
-                    speedControl.trigger(keypress);
+                    speedControl.trigger(keyPressEvent(KEY.ENTER));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('open/close the speed toggle on SPACE keydown', function () {
-                    keypress.which = $.ui.keyCode.SPACE;
-                    speedControl.trigger(keypress);
+                    speedControl.trigger(keyPressEvent(KEY.SPACE));
                     expect(speedControl).toHaveClass('open');
-                    speedControl.trigger(keypress);
+                    speedControl.trigger(keyPressEvent(KEY.SPACE));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('open the speed toggle on UP keydown', function () {
-                    keypress.which = $.ui.keyCode.UP;
-                    speedControl.trigger(keypress);
-                    expect(speedControl).toHaveClass('open');
-                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
+                    $('div.speeds').trigger(keyPressEvent(KEY.UP));
+                    expect($('div.speeds')).toHaveClass('open');
+                    expect(speedEntries.last().focus).toHaveBeenCalled();
                 });
 
                 it('close the speed toggle on ESC keydown', function () {
-                    keypress.which = $.ui.keyCode.ESC;
-                    speedControl.trigger(keypress);
+                    speedControl.trigger(keyPressEvent($.ui.keyCode.ESC));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
                 it('UP and DOWN keydown function as expected', function () {
                     // Iterate through list in both directions and check if
                     // things wrap up correctly.
-                    keypress.which = $.ui.keyCode.UP;
-                    speedControl.trigger(keypress);
-                    lastSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(previousLastSpeedEntry);
-                    keypress.which = $.ui.keyCode.DOWN;
-                    previousLastSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
-                    lastSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(firstSpeedEntry);
-                    firstSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(secondSpeedEntry);
-                    keypress.which = $.ui.keyCode.UP;
-                    secondSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(firstSpeedEntry);
-                    firstSpeedEntry.trigger(keypress);
-                    expect('focus').toHaveBeenTriggeredOn(lastSpeedEntry);
+                    var lastEntry = speedEntries.length-1, i;
+
+                    // First open menu
+                    speedControl.trigger(keyPressEvent(KEY.UP));
+
+                    // Iterate with UP key until we have looped.
+                    for (i = lastEntry; i >= 0; i--) {
+                        speedEntries.eq(i).trigger(keyPressEvent(KEY.UP));
+                        expect(previousSpeed(i).focus).toHaveBeenCalled();
+                    }
+
+                    // Iterate with DOWN key until we have looped.
+                    for (i = 0; i <= lastEntry; i++) {
+                        speedEntries.eq(i).trigger(keyPressEvent(KEY.DOWN));
+                        expect(nextSpeed(i).focus).toHaveBeenCalled();
+                    }
                 });
             });
         });

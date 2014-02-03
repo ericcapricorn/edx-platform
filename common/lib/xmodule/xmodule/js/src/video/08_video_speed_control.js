@@ -145,15 +145,7 @@ function () {
      */
     function _bindHandlers(state) {
         var speedLinks,
-            KEY = {
-                BACKSPACE: 8,
-                DOWN: 40,
-                ENTER: 13,
-                ESCAPE: 27,
-                SPACE: 32,
-                TAB: 9,
-                UP: 38
-            };
+            KEY = $.ui.keyCode;
 
         state.videoSpeedControl.videoSpeedsEl.find('a')
             .on('click', state.videoSpeedControl.changeVideoSpeed);
