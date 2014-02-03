@@ -56,8 +56,6 @@ class StubLtiHandler(StubHttpRequestHandler):
                 status_message = "This is LTI tool. Success."
                 # set data for grades what need to be stored as server data
                 if 'lis_outcome_service_url' in self.post_dict:
-                    referer = urlparse.urlparse(self.headers.getheader('referer'))
-                    self.server.referer_host = "{}://{}".format(referer.scheme, referer.netloc)
                     self.server.grade_data = {
                         'callback_url': self.post_dict.get('lis_outcome_service_url'),
                         'sourcedId': self.post_dict.get('lis_result_sourcedid')
@@ -112,13 +110,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         headers = {'Content-Type': 'application/xml', 'X-Requested-With': 'XMLHttpRequest'}
         headers['Authorization'] = self.oauth_sign(url, data)
 
-        # We can't mock requests in unit tests, because we use them, but we need
-        # them to be mocked only for this one case.
-        if self.server.config.get('run_inside_unittest_flag', None):
-            response = mock.Mock(status_code=200, url=url, data=data, headers=headers)
-            return response
-
-        # Send request ignoring verification of SSL certificate
+        # Send request ignoring verifirecation of SSL certificate
         response = requests.post(
             url,
             data=data,
