@@ -145,7 +145,7 @@ function () {
      */
     function _bindHandlers(state) {
         var speedLinks,
-            keyboard = {
+            KEY = {
                 BACKSPACE: 8,
                 DOWN: 40,
                 ENTER: 13,
@@ -186,17 +186,16 @@ function () {
                 // Attach 'keydown' event to speed control.
                 .on('keydown', function(event) {
                     var keyCode = event.keyCode;
-                    if (keyCode !== keyboard.TAB) {
+                    if (keyCode !== KEY.TAB) {
                         event.preventDefault();
                         event.stopImmediatePropagation();
                     }
                     // Open/close menu, leave focus on speed control.
-                    if (keyCode === keyboard.SPACE ||
-                        keyCode === keyboard.ENTER) {
+                    if (keyCode === KEY.SPACE || keyCode === KEY.ENTER) {
                         state.videoSpeedControl.el.toggleClass('open');
                     }
                     // Open menu and focus on last element of list above it.
-                    else if (keyCode === keyboard.UP) {
+                    else if (keyCode === KEY.UP) {
                         if (!state.videoSpeedControl.el.hasClass('open')) {
                             state.videoSpeedControl.el.addClass('open');
                         }
@@ -205,10 +204,10 @@ function () {
                                                .focus();
                     }
                     // Close menu.
-                    else if (keyCode === keyboard.ESCAPE) {
+                    else if (keyCode === KEY.ESCAPE) {
                         state.videoSpeedControl.el.removeClass('open');
                     }
-                })
+                });
 
             // Attach 'keydown' event to the individual speed entries.
             speedLinks = state.videoSpeedControl.videoSpeedsEl
@@ -223,23 +222,23 @@ function () {
                     event.preventDefault();
                     event.stopPropagation();
                     // Scroll up menu, wrapping at the top. Keep menu open.
-                    if (keyCode === keyboard.UP ||
-                        keyCode === keyboard.TAB && !event.shiftKey) {
+                    if (keyCode === KEY.UP ||
+                        keyCode === KEY.TAB && !event.shiftKey) {
                         $(speedLinks.eq(previousIndex)).focus();
                     }
                     // Scroll down  menu, wrapping at the bottom. Keep menu
                     // open.
-                    else if (keyCode === keyboard.DOWN ||
-                             keyCode === keyboard.TAB && event.shiftKey) {
+                    else if (keyCode === KEY.DOWN ||
+                             keyCode === KEY.TAB && event.shiftKey) {
                         $(speedLinks.eq(nextIndex)).focus();
                     }
                     // Change speed and close menu.
-                    else if (keyCode === keyboard.ENTER) {
+                    else if (keyCode === KEY.ENTER) {
                         state.videoSpeedControl.changeVideoSpeed(event);
                         state.videoSpeedControl.el.removeClass('open');
                     }
                     // Close menu.
-                    else if (keyCode === keyboard.ESCAPE) {
+                    else if (keyCode === KEY.ESCAPE) {
                         state.videoSpeedControl.el.removeClass('open');
                         state.videoSpeedControl.el.children('a').focus();
                     }
