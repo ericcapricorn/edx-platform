@@ -103,49 +103,50 @@
                     spyOn($.fn, 'focus');
                 });
 
-                it('open the speed toggle on hover', function () {
+                it('open the speed menu on hover', function () {
                     speedControl.mouseenter();
                     expect(speedControl).toHaveClass('open');
                     speedControl.mouseleave();
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('close the speed toggle on mouse out', function () {
+                it('close the speed menu on mouse out', function () {
                     speedControl.mouseenter().mouseleave();
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('close the speed toggle on click', function () {
+                it('close the speed menu on click', function () {
                     speedControl.mouseenter().click();
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('open/close the speed toggle on ENTER keydown', function () {
+                it('toggle the speed menu on ENTER keydown', function () {
                     speedControl.trigger(keyPressEvent(KEY.ENTER));
                     expect(speedControl).toHaveClass('open');
                     speedControl.trigger(keyPressEvent(KEY.ENTER));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('open/close the speed toggle on SPACE keydown', function () {
+                it('toggle the speed menu on SPACE keydown', function () {
                     speedControl.trigger(keyPressEvent(KEY.SPACE));
                     expect(speedControl).toHaveClass('open');
                     speedControl.trigger(keyPressEvent(KEY.SPACE));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('open the speed toggle on UP keydown', function () {
+                it('open the speed menu on UP keydown', function () {
                     $('div.speeds').trigger(keyPressEvent(KEY.UP));
                     expect($('div.speeds')).toHaveClass('open');
                     expect(speedEntries.last().focus).toHaveBeenCalled();
                 });
 
-                it('close the speed toggle on ESC keydown', function () {
-                    speedControl.trigger(keyPressEvent($.ui.keyCode.ESC));
+                it('close the speed menu on ESCAPE keydown', function () {
+                    speedControl.trigger(keyPressEvent(KEY.ESCAPE));
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('UP and DOWN keydown function as expected', function () {
+                it('UP and DOWN keydown function as expected on speed entries',
+                   function () {
                     // Iterate through list in both directions and check if
                     // things wrap up correctly.
                     var lastEntry = speedEntries.length-1, i;
@@ -164,6 +165,30 @@
                         speedEntries.eq(i).trigger(keyPressEvent(KEY.DOWN));
                         expect(nextSpeed(i).focus).toHaveBeenCalled();
                     }
+                });
+
+                it('ESC keydown on speed entry closes menu', function () {
+                    // First open menu. Focus is on last speed entry.
+                    speedControl.trigger(keyPressEvent(KEY.UP));
+                    speedEntries.last().trigger(keyPressEvent(KEY.ESCAPE));
+
+                    // Menu is closed and focus has been returned to speed
+                    // control.
+                    expect(speedControl).not.toHaveClass('open');
+                    expect(speedControl.focus).toHaveBeenCalled();
+                });
+
+                it('ENTER keydown on speed entry selects speed and closes menu',
+                   function () {
+                    // First open menu. Focus is on last speed entry, 0.50x.
+                    speedControl.trigger(keyPressEvent(KEY.UP));
+                    speedEntries.last().trigger(keyPressEvent(KEY.ENTER));
+
+                    // Menu is closed, focus has been returned to speed
+                    // control and video speed has been changed to 0.50x.
+                    expect(speedControl).not.toHaveClass('open');
+                    expect(speedControl.focus).toHaveBeenCalled();
+                    // TODO: Test that speed has been changed to 0.50x.
                 });
             });
         });
