@@ -15,30 +15,32 @@ New documentation, *Building a Course with edX Studio*, is available online_. Yo
 
 .. _online: http://edx.readthedocs.org/projects/ca/en/latest/
 
+Recent documentation additions include:
+
+* `Using an Instant Hangout in Your Course <http://edx.readthedocs.org/projects/ca/en/latest/google_hangouts.html>`_
+* `Student Data <http://edx.readthedocs.org/projects/ca/en/latest/course_student.html>`_
+* `Grades <http://edx.readthedocs.org/projects/ca/en/latest/course_grades.html>`_
+* `Multiple Choice and Numerical Input Problem <http://edx.readthedocs.org/projects/ca/en/latest/additional_tools.html#multiple-choice-and-numerical-input>`_
+
 
 ==========================
 Changes and Updates
 ==========================
 
-
+* The Display Name of a component is now shown in the unit is Private or a draft. For more information, see the `updated documentation on components <http://edx.readthedocs.org/projects/ca/en/latest/organizing_course.html#components>`_.
 
 
 ***************************************
 edX Learning Management System
 ***************************************
 
+* The Role element is now added to LTI components.  For edX users with the Instructor role, the Instructor role is passed to LTI.  EdX users with the Staff role have the Administrator role passed to LTI.  All students are passed as Student to LTI. (BLD-583)
 
 
 ***************************************
 Discussions
 ***************************************
 
+* Long discussion threads are now paginated. When a student opens the discussion thread, first 25 responses are loaded. The student can then load 100 more responses at a time. The field and button to submit a new response are always available at the bottom of the listed responses. (FOR-371)
 
-
-
-***************************************
-Open Response Assessments
-***************************************
-
-
-
+* When you hover the mouse button over a discussion thread in the left side bar, the pop-up tool-tip now displays the number of unread comments you have in the thread. (FOR-434)
