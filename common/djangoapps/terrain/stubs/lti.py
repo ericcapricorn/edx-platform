@@ -128,13 +128,19 @@ class StubLtiHandler(StubHttpRequestHandler):
         """
         Return content (str) either for launch, send grade or get result from TC.
         """
-        submit_form = ''
         if submit_url:
             submit_form = textwrap.dedent("""
                 <form action="{}/grade" method="post">
                     <input type="submit" name="submit-button" value="Submit">
                 </form>
             """).format(submit_url)
+        else:
+            submit_form = ''
+
+        if self.post_dict.get('roles'):
+            role = '<h5>Role: {}</h5>'.format(self.post_dict['roles'])
+        else:
+            role = ''
 
         response_str = textwrap.dedent("""
                 <html>
@@ -145,13 +151,13 @@ class StubLtiHandler(StubHttpRequestHandler):
                         <div>
                             <h2>IFrame loaded</h2>
                             <h3>Server response is:</h3>
-                            <h3 class="result">{}</h3>
-
+                            <h3 class="result">{response}</h3>
+                            {role}
                         </div>
-                        {}
+                        {submit_form}
                     </body>
                 </html>
-            """).format(response_text, submit_form)
+            """).format(response=response_text, role=role, submit_form=submit_form)
 
         return urllib.unquote(response_str)
 
