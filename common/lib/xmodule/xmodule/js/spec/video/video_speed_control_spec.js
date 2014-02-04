@@ -74,44 +74,38 @@
 
             describe('when running on non-touch based device', function () {
                 var speedControl, speedEntries,
-                    KEY = $.ui.keyCode;
+                    KEY = $.ui.keyCode,
 
-                keyPressEvent = function(key) {
-                    return $.Event('keydown', {keyCode: key});
-                };
+                    keyPressEvent = function(key) {
+                        return $.Event('keydown', {keyCode: key});
+                    },
 
-                // Get previous element in array or cyles back to the last if it
-                // is the first.
-                previousSpeed = function(index) {
-                    return index === 0 ?
-                                     speedEntries.eq(speedEntries.length - 1) :
-                                     speedEntries.eq(index - 1);
-                }
+                    // Get previous element in array or cyles back to the last
+                    // if it is the first.
+                    previousSpeed = function(index) {
+                        return speedEntries.eq(index < 1 ?
+                                               speedEntries.length - 1 :
+                                               index - 1);
+                    },
 
-                // Get next element in array or cyles back to the first if it is
-                // the last.
-                nextSpeed = function(index) {
-                    return index === speedEntries.length - 1 ?
-                                     speedEntries.eq(0) :
-                                     speedEntries.eq(index + 1);
-                }
+                    // Get next element in array or cyles back to the first if it is
+                    // the last.
+                    nextSpeed = function(index) {
+                        return speedEntries.eq(index >= speedEntries.length-1 ?
+                                               0 :
+                                               index + 1);
+                    };
 
                 beforeEach(function () {
                     state = jasmine.initializePlayer();
                     speedControl = $('div.speeds');
-                    speedEntries = $('div.speeds>a');
-                    spyOn($.fn, 'focus');
+                    speedEntries = speedControl.children('a')
                 });
 
                 it('open the speed menu on hover', function () {
                     speedControl.mouseenter();
                     expect(speedControl).toHaveClass('open');
                     speedControl.mouseleave();
-                    expect(speedControl).not.toHaveClass('open');
-                });
-
-                it('close the speed menu on mouse out', function () {
-                    speedControl.mouseenter().mouseleave();
                     expect(speedControl).not.toHaveClass('open');
                 });
 
@@ -137,7 +131,7 @@
                 it('open the speed menu on UP keydown', function () {
                     $('div.speeds').trigger(keyPressEvent(KEY.UP));
                     expect($('div.speeds')).toHaveClass('open');
-                    expect(speedEntries.last().focus).toHaveBeenCalled();
+                    expect(speedEntries.last()).toBeFocused();
                 });
 
                 it('close the speed menu on ESCAPE keydown', function () {
@@ -157,13 +151,13 @@
                     // Iterate with UP key until we have looped.
                     for (i = lastEntry; i >= 0; i--) {
                         speedEntries.eq(i).trigger(keyPressEvent(KEY.UP));
-                        expect(previousSpeed(i).focus).toHaveBeenCalled();
+                        expect(previousSpeed(i)).toBeFocused();
                     }
 
                     // Iterate with DOWN key until we have looped.
                     for (i = 0; i <= lastEntry; i++) {
                         speedEntries.eq(i).trigger(keyPressEvent(KEY.DOWN));
-                        expect(nextSpeed(i).focus).toHaveBeenCalled();
+                        expect(nextSpeed(i)).toBeFocused();
                     }
                 });
 
@@ -175,7 +169,7 @@
                     // Menu is closed and focus has been returned to speed
                     // control.
                     expect(speedControl).not.toHaveClass('open');
-                    expect(speedControl.focus).toHaveBeenCalled();
+                    expect(speedControl).toBeFocused();
                 });
 
                 it('ENTER keydown on speed entry selects speed and closes menu',
@@ -187,7 +181,7 @@
                     // Menu is closed, focus has been returned to speed
                     // control and video speed has been changed to 0.50x.
                     expect(speedControl).not.toHaveClass('open');
-                    expect(speedControl.focus).toHaveBeenCalled();
+                    expect(speedControl).toBeFocused();
                     // TODO: Test that speed has been changed to 0.50x.
                 });
             });

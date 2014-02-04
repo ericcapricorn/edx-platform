@@ -215,7 +215,7 @@ function () {
                     event.stopPropagation();
                     // Scroll up menu, wrapping at the top. Keep menu open.
                     if (keyCode === KEY.UP ||
-                        keyCode === KEY.TAB && !event.shiftKey) {
+                        (keyCode === KEY.TAB && !event.shiftKey)) {
                         $(speedLinks.eq(previousIndex)).focus();
                     }
                     // Scroll down  menu, wrapping at the bottom. Keep menu
