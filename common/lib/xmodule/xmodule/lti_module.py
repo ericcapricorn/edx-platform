@@ -48,7 +48,6 @@ from webob import Response
 import mock
 from xml.sax.saxutils import escape
 
-from django.conf import settings
 from xmodule.editing_module import MetadataOnlyEditingDescriptor
 from xmodule.raw_module import EmptyDataRawDescriptor
 from xmodule.x_module import XModule, module_attr
@@ -290,7 +289,7 @@ class LTIModule(LTIFields, XModule):
         While testing locally and on Jenkins, mock_lti_server use http.referer
         to obtain scheme, so it is ok to have http(s) anyway.
         """
-        scheme = 'http' if settings.DEBUG else 'https'
+        scheme = 'http' if self.system.debug else 'https'
         uri = '{scheme}://{host}{path}'.format(
             scheme=scheme,
             host=self.system.hostname,
