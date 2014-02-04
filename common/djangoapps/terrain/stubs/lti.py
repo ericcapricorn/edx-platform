@@ -157,7 +157,7 @@ class StubLtiHandler(StubHttpRequestHandler):
 
     def _is_correct_lti_request(self):
         """
-        If url to LTI Provider is correct.
+        Return a boolean indicating whether the URL path is a valid LTI end-point.
         """
         lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         return lti_endpoint in self.path
