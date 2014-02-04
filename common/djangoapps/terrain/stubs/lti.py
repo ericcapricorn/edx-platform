@@ -47,12 +47,12 @@ class StubLtiHandler(StubHttpRequestHandler):
         headers = {'Content-type': 'text/html'}
         if 'grade' in self.path and self._send_graded_result().status_code == 200:
             status_message = 'LTI consumer (edX) responded with XML content:<br>' + self.server.grade_data['TC answer']
-            content = self.create_content(status_message)
+            content = self._create_content(status_message)
             self.send_response(200, content)
         # Respond to request with correct lti endpoint:
         elif self._is_correct_lti_request():
             params = {k: v for k, v in self.post_dict.items() if k != 'oauth_signature'}
-            if self.check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
+            if self._check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
                 status_message = "This is LTI tool. Success."
                 # set data for grades what need to be stored as server data
                 if 'lis_outcome_service_url' in self.post_dict:
@@ -61,13 +61,13 @@ class StubLtiHandler(StubHttpRequestHandler):
                         'sourcedId': self.post_dict.get('lis_result_sourcedid')
                     }
                 submit_url = '//{}:{}'.format(*self.server.server_address)
-                content = self.create_content(status_message, submit_url)
+                content = self._create_content(status_message, submit_url)
                 self.send_response(200, content)
             else:
-                content = self.create_content("Wrong LTI signature")
+                content = self._create_content("Wrong LTI signature")
                 self.send_response(200, content)
         else:
-            content = self.create_content("Invalid request URL")
+            content = self._create_content("Invalid request URL")
             self.send_response(500, content)
 
     def _send_graded_result(self):
@@ -120,7 +120,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         self.server.grade_data['TC answer'] = response.content
         return response
 
-    def create_content(self, response_text, submit_url=None):
+    def _create_content(self, response_text, submit_url=None):
         """
         Return content (str) either for launch, send grade or get result from TC.
         """
@@ -186,7 +186,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         headers = headers['Authorization'] + ', oauth_body_hash="{}"'.format(oauth_body_hash)
         return headers
 
-    def check_oauth_signature(self, params, client_signature):
+    def _check_oauth_signature(self, params, client_signature):
         """
         Checks oauth signature from client.
 
