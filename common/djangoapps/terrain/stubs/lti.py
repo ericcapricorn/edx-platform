@@ -44,25 +44,29 @@ class StubLtiHandler(StubHttpRequestHandler):
         """
         Handle a POST request from the client and sends response back.
         """
-        headers = {'Content-type': 'text/html'}
         if 'grade' in self.path and self._send_graded_result().status_code == 200:
             status_message = 'LTI consumer (edX) responded with XML content:<br>' + self.server.grade_data['TC answer']
             content = self._create_content(status_message)
             self.send_response(200, content)
-        # Respond to request with correct lti endpoint:
+
+        # Respond to request with correct lti endpoint
         elif self._is_correct_lti_request():
             params = {k: v for k, v in self.post_dict.items() if k != 'oauth_signature'}
+
             if self._check_oauth_signature(params, self.post_dict.get('oauth_signature', "")):
                 status_message = "This is LTI tool. Success."
-                # set data for grades what need to be stored as server data
+
+                # Set data for grades what need to be stored as server data
                 if 'lis_outcome_service_url' in self.post_dict:
                     self.server.grade_data = {
                         'callback_url': self.post_dict.get('lis_outcome_service_url'),
                         'sourcedId': self.post_dict.get('lis_result_sourcedid')
                     }
+
                 submit_url = '//{}:{}'.format(*self.server.server_address)
                 content = self._create_content(status_message, submit_url)
                 self.send_response(200, content)
+
             else:
                 content = self._create_content("Wrong LTI signature")
                 self.send_response(200, content)
@@ -105,18 +109,18 @@ class StubLtiHandler(StubHttpRequestHandler):
                   </imsx_POXBody>
                 </imsx_POXEnvelopeRequest>
         """)
+
         data = payload.format(**values)
         url = self.server.grade_data['callback_url']
-        headers = {'Content-Type': 'application/xml', 'X-Requested-With': 'XMLHttpRequest'}
-        headers['Authorization'] = self.oauth_sign(url, data)
+        headers = {
+            'Content-Type': 'application/xml',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Authorization': self.oauth_sign(url, data)
+            }
 
         # Send request ignoring verifirecation of SSL certificate
-        response = requests.post(
-            url,
-            data=data,
-            headers=headers,
-            verify=False
-        )
+        response = requests.post(url, data=data, headers=headers, verify=False)
+
         self.server.grade_data['TC answer'] = response.content
         return response
 
@@ -152,9 +156,9 @@ class StubLtiHandler(StubHttpRequestHandler):
         return urllib.unquote(response_str)
 
     def _is_correct_lti_request(self):
-        '''
+        """
         If url to LTI Provider is correct.
-        '''
+        """
         lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         return lti_endpoint in self.path
 
@@ -173,7 +177,7 @@ class StubLtiHandler(StubHttpRequestHandler):
             'Content-Type': 'application/x-www-form-urlencoded',
         }
 
-        #Calculate and encode body hash. See http://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html
+        # Calculate and encode body hash. See http://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html
         sha1 = hashlib.sha1()
         sha1.update(body)
         oauth_body_hash = base64.b64encode(sha1.digest())
