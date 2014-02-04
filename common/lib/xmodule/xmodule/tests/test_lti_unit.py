@@ -246,7 +246,6 @@ class LTIModuleTest(LogicTest):
         self.assertEqual(real_user_id, expected_user_id)
 
     def test_outcome_service_url(self):
-        import ipdb; ipdb.set_trace()
         expected_outcome_service_url = '{scheme}://{host}{path}'.format(
                 scheme='http' if self.xmodule.runtime.debug else 'https',
                 host=self.xmodule.runtime.hostname,
