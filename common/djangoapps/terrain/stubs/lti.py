@@ -115,7 +115,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         headers = {
             'Content-Type': 'application/xml',
             'X-Requested-With': 'XMLHttpRequest',
-            'Authorization': self.oauth_sign(url, data)
+            'Authorization': self._oauth_sign(url, data)
             }
 
         # Send request ignoring verifirecation of SSL certificate
@@ -168,7 +168,7 @@ class StubLtiHandler(StubHttpRequestHandler):
         lti_endpoint = self.server.config.get('lti_endpoint', self.DEFAULT_LTI_ENDPOINT)
         return lti_endpoint in self.path
 
-    def oauth_sign(self, url, body):
+    def _oauth_sign(self, url, body):
         """
         Signs request and returns signed body and headers.
         """
