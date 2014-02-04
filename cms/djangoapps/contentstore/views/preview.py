@@ -7,7 +7,7 @@ from django.http import Http404, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from edxmako.shortcuts import render_to_response, render_to_string
 
-from xmodule_modifiers import replace_static_urls, wrap_xblock
+from xmodule_modifiers import replace_static_urls, wrap_xblock, wrap_fragment
 from xmodule.error_module import ErrorDescriptor
 from xmodule.exceptions import NotFoundError, ProcessingError
 from xmodule.modulestore.django import modulestore
@@ -153,14 +153,32 @@ def _load_preview_module(request, descriptor):
     return descriptor
 
 
-def get_preview_html(request, descriptor):
+def _studio_wrap_xblock(block, view, frag, context, display_name_only=False):
+    """
+    Wraps the results of rendering an XBlock view in a div which adds a header and Studio action buttons.
+    """
+    from pudb import set_trace; set_trace()
+    template_context = {
+        'xblock_context': context,
+        'block': block,
+        'content': block.display_name if display_name_only else frag.content,
+        }
+    html = render_to_string('studio_xblock_wrapper.html', template_context)
+    return wrap_fragment(frag, html)
+
+
+def get_preview_html(request, descriptor, context={}):
     """
     Returns the HTML returned by the XModule's student_view,
     specified by the descriptor and idx.
     """
     module = _load_preview_module(request, descriptor)
+
+    # Add an additional Studio-only wrapper
+    module.runtime.wrappers.append(_studio_wrap_xblock)
+
     try:
-        content = module.render("student_view").content
+        content = module.render("student_view", context).content
     except Exception as exc:                          # pylint: disable=W0703
         log.debug("Unable to render student_view for %r", module, exc_info=True)
         content = render_to_string('html_error.html', {'message': str(exc)})

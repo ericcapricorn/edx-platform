@@ -102,18 +102,25 @@ def xblock_handler(request, tag=None, package_id=None, branch=None, version_guid
                 # can bind to it correctly
                 component.runtime.wrappers.append(partial(wrap_xblock, handler_prefix))
 
+                # TODO provide a real context...
+                context = {
+                    'read_only': True
+                }
+
                 try:
-                    content = component.render('studio_view').content
+                    editor_content = component.render('studio_view', context).content
                 # catch exceptions indiscriminately, since after this point they escape the
                 # dungeon and surface as uneditable, unsaveable, and undeletable
                 # component-goblins.
                 except Exception as exc:                          # pylint: disable=W0703
                     log.debug("Unable to render studio_view for %r", component, exc_info=True)
-                    content = render_to_string('html_error.html', {'message': str(exc)})
+                    editor_content = render_to_string('html_error.html', {'message': str(exc)})
+
+                preview_content = get_preview_html(request, component, context)
 
                 return render_to_response('component.html', {
-                    'preview': get_preview_html(request, component),
-                    'editor': content,
+                    'preview': preview_content,
+                    'editor': editor_content,
                     'label': component.display_name or component.category,
                 })
         elif request.method == 'DELETE':
@@ -157,7 +164,6 @@ def xblock_handler(request, tag=None, package_id=None, branch=None, version_guid
             "Only instance creation is supported without a package_id.",
             content_type="text/plain"
         )
-
 
 def _save_item(request, usage_loc, item_location, data=None, children=None, metadata=None, nullout=None,
                grader_type=None, publish=None):
