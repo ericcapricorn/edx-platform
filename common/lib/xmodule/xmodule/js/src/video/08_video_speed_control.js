@@ -182,15 +182,10 @@ function () {
                         event.preventDefault();
                         event.stopImmediatePropagation();
                     }
-                    // Open/close menu, leave focus on speed control.
-                    if (keyCode === KEY.SPACE || keyCode === KEY.ENTER) {
-                        state.videoSpeedControl.el.toggleClass('open');
-                    }
                     // Open menu and focus on last element of list above it.
-                    else if (keyCode === KEY.UP) {
-                        if (!state.videoSpeedControl.el.hasClass('open')) {
-                            state.videoSpeedControl.el.addClass('open');
-                        }
+                    if (keyCode === KEY.ENTER || keyCode === KEY.SPACE ||
+                        keyCode === KEY.UP) {
+                        state.videoSpeedControl.el.addClass('open');
                         state.videoSpeedControl.videoSpeedsEl
                                                .find('a.speed_link:last')
                                                .focus();
@@ -212,7 +207,7 @@ function () {
                 $(speedLink).on('keydown', function (event) {
                     var keyCode = event.keyCode;
                     event.preventDefault();
-                    event.stopPropagation();
+                    event.stopImmediatePropagation();
                     // Scroll up menu, wrapping at the top. Keep menu open.
                     if (keyCode === KEY.UP ||
                         (keyCode === KEY.TAB && !event.shiftKey)) {
@@ -226,8 +221,8 @@ function () {
                     }
                     // Change speed and close menu.
                     else if (keyCode === KEY.ENTER) {
-                        state.videoSpeedControl.changeVideoSpeed(event);
                         state.videoSpeedControl.el.removeClass('open');
+                        state.videoSpeedControl.changeVideoSpeed(event);
                     }
                     // Close menu.
                     else if (keyCode === KEY.ESCAPE) {

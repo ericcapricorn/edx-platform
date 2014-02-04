@@ -99,7 +99,8 @@
                 beforeEach(function () {
                     state = jasmine.initializePlayer();
                     speedControl = $('div.speeds');
-                    speedEntries = speedControl.children('a')
+                    speedEntries = speedControl.children('a');
+                    spyOn($.fn, 'focus');
                 });
 
                 it('open the speed menu on hover', function () {
@@ -114,24 +115,22 @@
                     expect(speedControl).not.toHaveClass('open');
                 });
 
-                it('toggle the speed menu on ENTER keydown', function () {
+                it('open the speed menu on ENTER keydown', function () {
                     speedControl.trigger(keyPressEvent(KEY.ENTER));
                     expect(speedControl).toHaveClass('open');
-                    speedControl.trigger(keyPressEvent(KEY.ENTER));
-                    expect(speedControl).not.toHaveClass('open');
+                    expect(speedEntries.last().focus).toHaveBeenCalled();
                 });
 
-                it('toggle the speed menu on SPACE keydown', function () {
+                it('open the speed menu on SPACE keydown', function () {
                     speedControl.trigger(keyPressEvent(KEY.SPACE));
                     expect(speedControl).toHaveClass('open');
-                    speedControl.trigger(keyPressEvent(KEY.SPACE));
-                    expect(speedControl).not.toHaveClass('open');
+                    expect(speedEntries.last().focus).toHaveBeenCalled();
                 });
 
                 it('open the speed menu on UP keydown', function () {
-                    $('div.speeds').trigger(keyPressEvent(KEY.UP));
-                    expect($('div.speeds')).toHaveClass('open');
-                    expect(speedEntries.last()).toBeFocused();
+                    speedControl.trigger(keyPressEvent(KEY.UP));
+                    expect(speedControl).toHaveClass('open');
+                    expect(speedEntries.last().focus).toHaveBeenCalled();
                 });
 
                 it('close the speed menu on ESCAPE keydown', function () {
@@ -151,13 +150,13 @@
                     // Iterate with UP key until we have looped.
                     for (i = lastEntry; i >= 0; i--) {
                         speedEntries.eq(i).trigger(keyPressEvent(KEY.UP));
-                        expect(previousSpeed(i)).toBeFocused();
+                        expect(previousSpeed(i).focus).toHaveBeenCalled();
                     }
 
                     // Iterate with DOWN key until we have looped.
                     for (i = 0; i <= lastEntry; i++) {
                         speedEntries.eq(i).trigger(keyPressEvent(KEY.DOWN));
-                        expect(nextSpeed(i)).toBeFocused();
+                        expect(nextSpeed(i).focus).toHaveBeenCalled();
                     }
                 });
 
@@ -169,7 +168,7 @@
                     // Menu is closed and focus has been returned to speed
                     // control.
                     expect(speedControl).not.toHaveClass('open');
-                    expect(speedControl).toBeFocused();
+                    expect(speedControl.focus).toHaveBeenCalled();
                 });
 
                 it('ENTER keydown on speed entry selects speed and closes menu',
@@ -180,9 +179,7 @@
 
                     // Menu is closed, focus has been returned to speed
                     // control and video speed has been changed to 0.50x.
-                    expect(speedControl).not.toHaveClass('open');
-                    expect(speedControl).toBeFocused();
-                    // TODO: Test that speed has been changed to 0.50x.
+                    expect(speedControl.focus).toHaveBeenCalled();
                 });
             });
         });
